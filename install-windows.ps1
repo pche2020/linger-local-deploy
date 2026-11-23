@@ -3,6 +3,7 @@
 param(
     [switch]$CheckOnly,
     [switch]$DownloadOnly,
+    [switch]$AgentInstall,
     [ValidateSet('none', 'codex', 'claude', 'pi', 'antigravity')]
     [string]$Runtime = 'none',
     [ValidateRange(0, 4096)]
@@ -22,8 +23,8 @@ $sha256 = 'abb37f58143bf1bbd77e616d498ecc45388e44d4bd8aa76deb0e4eb66ce2be54'
 $release = "https://github.com/simplexai-labs/linger/releases/download/desktop-v$version"
 
 if ($CheckOnly -and $DownloadOnly) { throw 'Choose one check or download mode.' }
-if (($CheckOnly -or $DownloadOnly) -and $Runtime -ne 'none') {
-    throw '-Runtime is available in install mode.'
+if (($CheckOnly -or $DownloadOnly) -and ($AgentInstall -or $Runtime -ne 'none')) {
+    throw '-AgentInstall and -Runtime are available in install mode.'
 }
 if (-not $CheckOnly -and ($MinimumRamGiB -gt 0 -or $MinimumVramGiB -gt 0 -or $GpuIndex -ge 0)) {
     throw 'Memory thresholds and GPU selection require -CheckOnly.'
@@ -148,6 +149,45 @@ function Install-SelectedRuntime {
     Write-Host "Runtime installer finished: $executable. Open a new terminal to verify the version and sign in if needed."
 }
 
+function Get-LingerInstallation {
+    $programs = Join-Path $env:LOCALAPPDATA 'Programs'
+    $directories = @((Join-Path $programs 'Linger'), (Join-Path $programs 'Simplex'))
+    $registered = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
+        Where-Object { $_.PSObject.Properties['DisplayName'] -and $_.DisplayName -match '^Linger(?:\s+\d[\d.]*)?$' } |
+        Select-Object -First 1
+    if ($registered -and $registered.PSObject.Properties['InstallLocation'] -and $registered.InstallLocation) {
+        $directories = @([string]$registered.InstallLocation) + $directories
+    }
+    $executables = foreach ($directory in $directories) {
+        Join-Path $directory 'Linger.exe'
+        if ((Split-Path -Leaf $directory) -eq 'Simplex') { Join-Path $directory 'Simplex.exe' }
+    }
+    $executable = $executables | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    $running = [bool](Get-Process -Name Linger,Simplex -ErrorAction SilentlyContinue)
+    $existingDirectory = $directories | Where-Object { Test-Path -LiteralPath $_ -PathType Container } | Select-Object -First 1
+    [pscustomobject]@{
+        Executable = $executable
+        Running = $running
+        Present = [bool]($executable -or $running -or $registered -or $existingDirectory)
+    }
+}
+
+function Complete-LingerInstall($Installation) {
+    if (-not ($Installation.Executable -or $Installation.Running)) {
+        throw 'A Linger install could not be located or its folder is incomplete. Review it before repairing or replacing it.'
+    }
+    Install-SelectedRuntime
+    if ($AgentInstall -and -not $Installation.Running) {
+        Start-Process -FilePath $Installation.Executable
+        Write-Host 'Linger launched. Review first-run prompts and model selection in the app.'
+    } elseif ($Installation.Running) {
+        Write-Host 'Linger is already running. Use its existing window.'
+    } else {
+        Write-Host 'Open Linger from the Start menu to finish setup.'
+    }
+}
+
 if (-not $DownloadOnly) {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     try {
@@ -157,16 +197,10 @@ if (-not $DownloadOnly) {
         }
     } finally { $identity.Dispose() }
 
-    $programs = Join-Path $env:LOCALAPPDATA 'Programs'
-    $installedPaths = @('Linger\Linger.exe', 'Simplex\Linger.exe', 'Simplex\Simplex.exe')
-    $knownInstall = $installedPaths | Where-Object { Test-Path -LiteralPath (Join-Path $programs $_) }
-    $registered = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
-        Where-Object { $_.PSObject.Properties['DisplayName'] -and $_.DisplayName -match '^Linger(?:\s+\d[\d.]*)?$' } |
-        Select-Object -First 1
-    if ($knownInstall -or $registered -or (Get-Process -Name Linger,Simplex -ErrorAction SilentlyContinue)) {
-        Write-Host 'Existing Linger detected. Open it from the Start menu.'
-        Install-SelectedRuntime
+    $existing = Get-LingerInstallation
+    if ($existing.Present) {
+        Write-Host 'Existing Linger installation or folder detected.'
+        Complete-LingerInstall $existing
         exit 0
     }
 }
@@ -193,8 +227,16 @@ if ((Get-FileHash -LiteralPath $package -Algorithm SHA256).Hash -ine $sha256) {
 Write-Host "SHA-256 verified: $package"
 if ($DownloadOnly) { exit 0 }
 
-$setup = Start-Process -FilePath $package -PassThru
-$setup.WaitForExit()
-if ($setup.ExitCode -ne 0) { throw "Linger setup exited $($setup.ExitCode)." }
-Write-Host 'Linger setup completed. Open Linger and confirm the model plan in the app.'
-Install-SelectedRuntime
+$installerLock = [IO.File]::Open((Join-Path $cache 'installer.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
+try {
+    $installation = Get-LingerInstallation
+    if (-not $installation.Present) {
+        $setupOptions = @{ FilePath = $package; PassThru = $true }
+        if ($AgentInstall) { $setupOptions.ArgumentList = '/S' }
+        $setup = Start-Process @setupOptions
+        $setup.WaitForExit()
+        if ($setup.ExitCode -ne 0) { throw "Linger setup exited $($setup.ExitCode)." }
+        $installation = Get-LingerInstallation
+    }
+} finally { $installerLock.Dispose() }
+Complete-LingerInstall $installation

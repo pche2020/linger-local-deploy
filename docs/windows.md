@@ -26,7 +26,7 @@ nvidia-smi --query-gpu=index,name,driver_version,memory.total,memory.free --form
 .\install-windows.ps1
 ```
 
-脚本核对官方安装包 SHA-256 后启动交互式安装器，遇到已安装版本时跳过安装。手动安装也可以从同一发布取 `.exe` 或便携 ZIP，并用 `Get-FileHash -Algorithm SHA256` 对照 `SHA256SUMS.txt`。若组织策略阻止安装，交由管理员处理。向导如果允许选盘，先核对该盘可用空间、用户写权限和计划显示的下载总量。 [官方发布](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [官方 Windows 安装](https://docs.heylinger.com/install/desktop-app)
+脚本核对官方安装包 SHA-256 后启动交互式安装器。Agent 可用 `.\install-windows.ps1 -AgentInstall`，在确认是全新安装时使用官方安静模式，随后打开 Linger。脚本会复用现有应用。检测到只有安装目录、找不到可执行文件时会停止，以便检查现状。手动安装也可以从同一发布取 `.exe` 或便携 ZIP，并用 `Get-FileHash -Algorithm SHA256` 对照 `SHA256SUMS.txt`。若组织策略阻止安装，交由管理员处理。向导如果允许选盘，先核对该盘可用空间、用户写权限和计划显示的下载总量。 [官方发布](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [官方 Windows 安装](https://docs.heylinger.com/install/desktop-app)
 
 若脚本受到 Windows PowerShell 执行策略限制，先核对策略和脚本来源。个人设备上可在当前会话用 `Set-ExecutionPolicy -Scope Process RemoteSigned`，如果 ZIP 解压出的脚本仍带下载标记，审阅脚本后对该文件运行 `Unblock-File -LiteralPath .\install-windows.ps1`。组织策略以管理员配置为准。 [PowerShell 执行策略](https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_execution_policies)
 
@@ -38,14 +38,14 @@ nvidia-smi --query-gpu=index,name,driver_version,memory.total,memory.free --form
 
 ## 4. 设定日常 4B 与按需 27B
 
-在同一台 Windows 上准备两条明确标记的操作路径，逐项记录它们的实际房间、Runtime 和模型。原生界面可以为两个用途分别保留房间或标签，发任务前手动核对当前模型。已有案例的本地入口如下。
+在同一台 Windows 上为日常和长文任务分别命名房间或入口。每次发任务前，看一眼选中的计算机、Runtime 和实际模型。
 
-| 本机用途 | 案例中的入口 | 进入后核对 |
+| 用途 | 建议的房间名称 | 执行前的选择 |
 | --- | --- | --- |
-| 日常轻任务 | `Open-Windows-Standalone.cmd` | 默认 4B，选择「Windows 独立 4B」 |
-| 指定长文、复杂任务 | `Open-Windows-Standalone-27B.cmd` | 按需加载 27B，选择「Windows 独立 27B」 |
+| 日常轻任务 | Windows 独立 4B | 选择已确认可用的 4B 本地模型 |
+| 复杂任务 | Windows 独立 27B | 先复测系统 RAM 与显存，再按需加载 27B |
 
-表中的 `.cmd` 是现场已有的入口名。用公开安装包新装时，依据下方操作先准备模型，再建立明确命名的房间或本地快捷入口。日常路径的默认 4B 是使用者主动选择。27B 路径缺资源时暂停，保持 27B 选择。
+日常路径的 4B 由使用者主动选择。27B 路径缺资源时暂停，保持 27B 选择。
 
 ## 5. 下载 27B、检查缺口并按需加载
 
@@ -69,4 +69,4 @@ nvidia-smi --query-gpu=index,name,driver_version,memory.total,memory.free --form
 3. 确认测试结束、没有未保存内容或其他待完成的任务，再在模型页点 **Unload**。模型状态应回到 **Downloaded**。再次执行 `-CheckOnly`，记录回收后的 RAM、VRAM，并确认文件仍在原目录。必要时在托盘选择 **Quit**，先确认活动任务与保存状态。
 4. 到「设置 → 应用 → 启动」检查 Linger 是关闭状态。如果组织部署另加了 Linger 登录启动项，也要核对这一项。之后在获准的维护时间验证重新登录／启动和手动重开 Linger 两个场景。若重开自动恢复已批准的 27B 栈，报告其触发条件，按需验收保留为待解决。 [官方发布的退出行为](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [桌面恢复逻辑](https://github.com/simplexai-labs/linger/blob/desktop-v0.1.6/apps/desktop/src/main/local-server.ts)
 
-现场的 4B 完成了本地读写，模型已卸载且文件保留。27B 单独记录模型推理、显存变化和回收结果。退出和重新打开本机入口时，核对所访问的仍是 Windows 本机服务。要验收 Windows 在 Mac 休眠或关机时可独立执行，先保护两边未保存内容，在获准的维护时间复跑本节。截图里这一步尚未执行。
+分别记录 4B 和 27B 的真实推理、显存变化和回收结果。退出和重新打开本机入口时，核对所访问的仍是 Windows 本机服务。要验收 Windows 在 Mac 休眠或关机时可独立执行，先保护两边未保存内容，在获准的维护时间复跑本节。

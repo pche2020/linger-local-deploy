@@ -7,6 +7,7 @@ expected_sha256=509287d1a04c10969764a6a98a809b7d90ab2fe686a01ce6f2ff5a999e5c0de7
 release="https://github.com/simplexai-labs/linger/releases/download/desktop-v$version"
 mode=install
 runtime=none
+open_after_install=0
 minimum_memory=0
 cache_dir="$HOME/Library/Caches/linger-local-deploy"
 app_dir="$HOME/Applications"
@@ -17,10 +18,11 @@ mounted=0
 usage() {
   cat <<'USAGE'
 Usage: bash install-macos.sh [--check [--minimum-memory-gib GiB] | --download-only]
-                            [--runtime codex|claude|pi|antigravity] [--help]
+                            [--open] [--runtime codex|claude|pi|antigravity] [--help]
 Default: verify and install the pinned Linger desktop app for the current user.
 --check: inventory only. Optionally fail if available unified memory is below GiB.
 --download-only: cache the verified DMG without installing.
+--open: open the installed app or bring the existing app forward after install.
 --runtime: also install the selected CLI if it is missing. Account sign-in is separate.
 USAGE
 }
@@ -37,6 +39,9 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 && "$2" =~ ^[0-9]+([.][0-9]+)?$ ]] || fail 'Specify a nonnegative number in GiB.'
       minimum_memory="$2"
       shift 2 ;;
+    --open)
+      open_after_install=1
+      shift ;;
     --runtime)
       [[ $# -ge 2 ]] || fail 'Specify a runtime name.'
       case "$2" in codex|claude|pi|antigravity) runtime="$2" ;; *) fail 'Unknown runtime.' ;; esac
@@ -48,6 +53,7 @@ done
 
 [[ "$mode" == check || "$minimum_memory" == 0 ]] || fail '--minimum-memory-gib requires --check.'
 [[ "$mode" == install || "$runtime" == none ]] || fail '--runtime is available in install mode.'
+[[ "$mode" == install || "$open_after_install" == 0 ]] || fail '--open requires install mode.'
 [[ "$(uname -s)" == Darwin ]] || fail 'Run this script on the target Mac.'
 [[ "$(sysctl -n hw.optional.arm64 2>/dev/null || true)" == 1 ]] || fail 'This release requires Apple silicon.'
 os_version="$(sw_vers -productVersion)"
@@ -117,9 +123,25 @@ install_runtime() {
   printf 'Runtime installer finished: %s. Open a new terminal to verify the version and sign in if needed.\n' "$executable"
 }
 
+open_linger() {
+  local app
+  if [[ "$open_after_install" != 1 ]]; then
+    printf 'Open Linger from Applications to finish setup.\n'
+    return 0
+  fi
+  for app in "$app_dir/Linger.app" /Applications/Linger.app; do
+    if [[ -d "$app" ]]; then
+      /usr/bin/open "$app" || fail 'Linger is installed. Check the macOS first-launch prompt or open it in Finder.'
+      return 0
+    fi
+  done
+  printf 'Linger is already running. Switch to its existing window.\n'
+}
+
 if [[ "$mode" == install ]] && { [[ -e /Applications/Linger.app || -e "$app_dir/Linger.app" ]] || pgrep -x Linger >/dev/null 2>&1; }; then
-  printf 'Existing Linger detected. Open it from Applications.\n'
+  printf 'Existing Linger detected.\n'
   install_runtime
+  open_linger
   exit 0
 fi
 
@@ -160,5 +182,6 @@ else
 fi
 /usr/bin/hdiutil detach "$work_dir/mount" >/dev/null
 mounted=0
-printf 'Open Linger in Finder and follow the official first-launch and setup instructions.\n'
 install_runtime
+open_linger
+printf 'Complete any macOS first-launch prompt and continue setup in Linger.\n'

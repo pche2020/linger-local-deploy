@@ -19,10 +19,10 @@ bash ./install-macos.sh --check
 ## 2. 校验并安装桌面应用
 
 ```bash
-bash ./install-macos.sh
+bash ./install-macos.sh --open
 ```
 
-脚本下载、校验固定版本的官方 ARM64 DMG，把 `Linger.app` 放入 `~/Applications`。发现已有 Linger 时复用它。手动安装时从同一发布页取 `.dmg` 和 `SHA256SUMS.txt`，用 `shasum -a 256` 对照后在 Finder 中拖入「应用程序」。首次遇到发布者无法验证，按官方文档到「系统设置 → 隐私与安全性」对这个应用确认。 [官方发布](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [官方 Mac 安装](https://docs.heylinger.com/install/desktop-app)
+脚本下载、校验固定版本的官方 ARM64 DMG，把 `Linger.app` 放入 `~/Applications`。`--open` 会安装后打开应用。发现已有 Linger 时复用它。手动安装时从同一发布页取 `.dmg` 和 `SHA256SUMS.txt`，用 `shasum -a 256` 对照后在 Finder 中拖入「应用程序」。首次遇到发布者无法验证，按官方文档到「系统设置 → 隐私与安全性」对这个应用确认。 [官方发布](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [官方 Mac 安装](https://docs.heylinger.com/install/desktop-app)
 
 ## 3. 选账号、执行机和 Runtime
 

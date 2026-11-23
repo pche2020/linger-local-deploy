@@ -18,18 +18,18 @@ Mac 的桌面安装若只监听回环地址，可以走已经配置好且获准�
 .\open-windows-mac.ps1 -SshHost your-mac -MacWebPort 3000
 ```
 
-这条命令在当前窗口维持一个只绑定 Windows `127.0.0.1` 的 SSH 转发。命令连上后通常没有新输出。使用原有可信主机配置并核对 SSH 主机指纹。另开浏览器访问 `http://localhost:3000` 或 Mac 原本使用的回环主机名，继续用实际端口。若已有能正常运行的 SSH 窗口和 `Open-Linger` 快捷入口，直接复用该入口即可。 [Windows OpenSSH 客户端](https://learn.microsoft.com/windows-server/administration/openssh/openssh-overview)
+这条命令在当前窗口维持一个只绑定 Windows `127.0.0.1` 的 SSH 转发。命令连上后通常没有新输出。使用原有可信主机配置并核对 SSH 主机指纹。另开浏览器访问 `http://localhost:3000` 或 Mac 原本使用的回环主机名，继续用实际端口。若已有能正常运行的 SSH 转发或桌面快捷入口，可以直接复用。 [Windows OpenSSH 客户端](https://learn.microsoft.com/windows-server/administration/openssh/openssh-overview)
 
 1. Windows 页面能加载后，在页面登录 Mac 这条路径对应的 Linger 账号。可用原账号时复用。需要查看 Quick Install 生成的密码时，在对应服务的安装完成页 **Show**，由用户在登录页输入。
 2. 在房间选择明确指向 Mac 的 Agent，发送前确认房间、计算机和模型。只用 Windows 浏览器访问时，Windows 可以只承担客户端角色。选择 Windows 独立入口时会使用 Windows 本机服务及其记录。
-3. 两边显示同一邮箱或已登录时，分别核对当前 URL、Agent 指定的计算机和模型。案例里 Windows 独立模式和 Windows 访问 Mac 模式的聊天分别保存，切换入口不自动合并聊天。
+3. 两边显示同一邮箱或已登录时，分别核对当前 URL、Agent 指定的计算机和模型。Windows 独立服务与 Mac 服务分别保存各自的聊天，切换入口时按服务查找原聊天。
 
 ## 3. 跨设备验收与停止
 
 - 从 Windows 发一个短任务，请 Mac Agent 在刚准备的 Mac 临时目录写一行 `linger-mac-route-ok`，读回同一行。在 Mac 确认新测试文件及其内容，并核对模型状态、推理日志或资源变化。
 - 如果用 SSH，页面登录和 HTTP 成功只验到访问链路。记录任务真正执行的计算机、Runtime、模型、输出及文件位置。
 - 暂停使用时，先确认聊天任务结束、内容已保存。想回收内存就在 Mac 模型页 **Unload** 并核对磁盘文件仍在。使用 SSH 时用 `Ctrl+C` 收掉自己开的转发。只关闭 Windows 页面后，本次 Mac 推理进程可能仍在运行。
-- 测试 Mac 关机或睡眠时 Windows 独立模式是否仍可用，等两端工作都已保存并获准后另做。案例截图明确记录该断开测试尚未执行。
+- 测试 Mac 关机或睡眠时 Windows 独立模式是否仍可用，等两端工作都已保存并获准后另做。
 
 ## 4. 卡点与处理
 

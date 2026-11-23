@@ -1,42 +1,52 @@
-# Linger 本地部署指南
+# 让 Mac 和 Windows 跑自己的 AI｜把 Linger 部署交给 Agent
 
-选择 Mac 独立、Windows 独立或从 Windows 使用 Mac 三种 Linger 部署方式。按实际执行机的硬件选模型，再用任务结果和设备资源变化验收。本文以 **Linger Desktop 0.1.6** 为安装基线。该版本捆绑 `localmodels 0.1.0.dev45`，硬件参考表来自官方 `0.1.0.dev41` 的模拟配置，以实际安装向导的计划和本机验收为准。 [官方发布](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [官方硬件表](https://docs.heylinger.com/hardware/compatibility)
+把这个仓库发给能操作目标电脑的 Agent，就能让它检查硬件、安装 Linger、选合适的本地模型，并用一次真实任务确认跑在预期设备上。Mac 和 Windows 都可以独立部署，也可以在 Windows 提交任务、让 Mac 执行。
+
+## 把这段话发给你的 Agent
+
+在准备安装的电脑上打开有终端权限的 Codex、Claude Code 或其他 Agent。把下面整段发给它，就可以从硬件检查开始。
+
+```text
+请在我这台电脑部署 Linger：https://github.com/pche2020/linger-local-deploy
+先读取仓库的 AGENTS.md，检查硬件和已有安装。复用已有配置，按检查结果推荐部署方式和模型。
+请代我完成当前电脑上的下载、校验、安装、配置和验收。需要登录、授予权限、连接另一台电脑、下载大型模型或更改已有配置时，先告诉我具体动作并等我确认。
+如果我指定了模型，资源不足就报告缺口，等我释放资源。验收后告诉我怎么启动、停止，以及模型文件在哪里。
+```
+
+| Agent 会做什么 | 什么时候需要你 |
+| --- | --- |
+| 检查操作系统、芯片、内存、显存、驱动和磁盘，复用已经装好的应用与 Runtime | 要连接另一台电脑或使用新的账号权限时，先确认连接对象和用途 |
+| 下载并校验官方安装包，安装并打开 Linger。界面可操作时继续完成已获准的配置 | 你本人完成账号登录、系统首次运行确认和权限授权。模型下载前确认模型、大小和目标盘 |
+| 验证真正执行任务的设备和模型，试跑一次临时任务，卸载测试模型并保留文件 | 切换现用模型、退出有任务的应用、升级现有安装或重启设备时，先确认影响 |
+
+有桌面操作能力的 Agent 可以继续点安装向导。只有终端权限的 Agent 会把应用打开，并在必须操作界面时告诉你具体点哪里。Windows Agent 安装入口会在确认是全新安装时使用官方安装器的安静模式，Mac 入口会安装并打开应用。手动安装命令见三个部署流程。 [Agent 执行手册](AGENTS.md)
 
 ## 本地部署能解决什么问题
 
-| 场景 | 做法 | 得到什么 |
+| 你遇到的场景 | 可以怎么做 | 最后能拿到什么 |
 | --- | --- | --- |
-| 私密笔记、内部文档、离线素材 | 在自管设备上用本地模型提取要点、分类或起草 | 推理内容留在选定的本地计算机。房间、历史和文档由你选用的 Linger 服务保存 |
-| 高频处理日志、代码和草稿 | 在日常机器或闲置 GPU 电脑上运行模型 | 本地推理没有远程模型 API 的逐次费用或限流。机器仍有显存、耗电和吞吐成本 |
-| 两台设备分工，或 Windows 不适合常驻大模型 | 在各自设备独立执行，或者从 Windows 提交给 Mac 上的 Agent | 可在 Windows 操作、复用 Mac 的工作区与本地模型，也可让 Windows 自己使用 NVIDIA 显卡 |
-| 偶尔用 27B，而且还要剪辑、游戏或跑 ComfyUI | 保留模型文件，用时加载，用完卸载 | 避免专为偶发任务常驻占用 RAM 和显存 |
-| 断网或网络不稳定 | 先完成必要下载，再用已下载模型处理本地文本 | 本地推理可以使用已有权重。网页搜索、云模型登录和远程连接仍各自需要网络 |
+| 会议纪要在 Mac 的 Obsidian 库里，想整理内部项目 | 在 Mac 独立部署，用本地模型读一个已授权的项目目录，先生成纪要副本，按「决策、待办、负责人、日期」提取 | 一份 Markdown 纪要和待办表。原笔记保留，推理在 Mac 上完成 |
+| Windows 上积累了构建日志、脚本输出和待整理文件 | 用 Windows 独立模式的轻量模型，先归类错误日志和重复条目，在临时目录输出结果 | 带原日志文件名的错误清单、复现线索或 CSV，便于比对后再处理源文件 |
+| 剪辑或 ComfyUI 占着 Windows 显卡，资料还在 Mac | 在 Windows 打开 Mac 上的 Linger，选执行位置为 Mac 的 Agent，针对 Mac 工作区做摘要或批次整理 | Windows 上可以提交和查看任务，Mac 负责处理，Windows 显卡可以继续用于原任务 |
+| 只有遇到长文或多份材料才想用 27B | 在硬件达标时保留 27B 权重，使用前检查资源，加载后分批对照材料并要求列出处 | 可复核的差异表或草稿。完成后卸载模型，显存和内存留给其他应用 |
+| 经常试会议模板、写代码草稿或批量整理工作日志 | 下载完成后，用本地模型反复运行同一份模板，将输入和生成物留在你指定的工作区 | 可以反复生成结果，无需按次调用云模型。机器仍会消耗电力，速度由硬件决定 |
+| 网络不稳定，仍要整理已经下载的资料 | 提前下载模型和所需文件，选独立模式和本地模型，任务只读取已有资料 | 能继续做本地摘要、改写和分类。联网搜索、远程访问和云端工具需要各自的连接 |
 
-Linger 里的**账号**是登录身份，**服务**保存房间和会话，**计算机**提供执行环境，**Runtime**运行 Agent，**模型**负责推理。同一个邮箱也可能出现在两个独立 Quick Install 中。两端实际使用同一账号时，仍要分别核实服务地址、计算机状态和模型执行位置。云模型、联网工具与外部连接器有各自的数据流。 [数据存放位置](https://docs.heylinger.com/concepts/where-your-data-lives) · [数据和隐私](https://docs.heylinger.com/security/data-and-privacy)
+本地模型处理推理时，执行设备负责读文件和运行模型。房间、聊天和文档由所选的 Linger 服务保存。启用云模型、网页搜索或外部连接器时，按各自的数据流核对权限。 [数据存放位置](https://docs.heylinger.com/concepts/where-your-data-lives) · [数据和隐私](https://docs.heylinger.com/security/data-and-privacy)
 
 ## 选择部署方式
 
-| 配置 | Linger 服务与记录 | Agent 和模型执行机 | 优点与使用场景 | 依赖与代价 |
-| --- | --- | --- | --- | --- |
-| [Mac 单独执行](docs/mac.md) | Mac 本机 | Mac，Metal | 设备少、维护简单。适合 Mac 日常文档、笔记、代码和个人知识库 | 占用 Mac 的统一内存，模型容量随当前可用内存变化 |
-| [Windows 单独执行](docs/windows.md) | Windows 本机 | Windows，CUDA | 可使用独显与本地文件。轻任务可以明确选 4B，长文和较复杂任务按需启用 27B | 要管理 Windows 可用 RAM、显存、驱动和磁盘，两档入口各自核对所选模型 |
-| [Windows 依赖 Mac 执行](docs/windows-via-mac.md) | Mac 上的 Linger 服务 | Mac，Metal。Windows 访问并提交任务 | Windows 可以复用 Mac 的 Agent、文件和模型，适合 Windows GPU 忙、文件在 Mac 或想维持同一个 Mac 工作区 | Mac 要在线，Windows 要能访问 Mac 服务。远程访问可能受休眠、网络和端口影响 |
+| 配置 | 服务与记录 | 执行 Agent 和模型 | 适合什么时候选 |
+| --- | --- | --- | --- |
+| [Mac 单独执行](docs/mac.md) | Mac 本机 | Mac，Metal | 常处理 Mac 上的笔记、文档或代码，想在一台机器内把流程跑通 |
+| [Windows 单独执行](docs/windows.md) | Windows 本机 | Windows，CUDA | 文件在 Windows，或有 NVIDIA 独显，需要轻模型和 27B 分别按需使用 |
+| [从 Windows 提交给 Mac](docs/windows-via-mac.md) | Mac 上的 Linger 服务 | Mac，Metal | Windows 负责操作界面，Mac 保持在线并执行任务，适合资料只在 Mac 或 Windows 显卡正在使用 |
 
-两端可以登录同一账号。选择模式时以实际服务地址、Agent 指定的计算机、Runtime 和模型为准。案例里的 Windows 独立模式与访问 Mac 的模式分别保存聊天，切换入口不会合并两边的历史。
-
-## 一条命令安装
-
-从 GitHub 下载仓库 ZIP 并解压，或者克隆仓库，进入本指南的目录。选与你目标机器匹配的一行，在那台机器的终端运行。脚本从 Linger 官方 Release 下载固定版本并核对 SHA-256。先完成桌面安装，随后在应用里选择账号、计算机和模型。已有安装会跳过桌面安装。需自行完成系统安装提示与账号登录。
-
-| 系统 | 命令 | 完整流程 |
-| --- | --- | --- |
-| Apple silicon Mac | `bash ./install-macos.sh` | [Mac 单独执行](docs/mac.md) |
-| Windows 11 x64 | `.\install-windows.ps1` | [Windows 单独执行](docs/windows.md) |
-| 在 Windows 使用 Mac | `.\open-windows-mac.ps1 -SshHost your-mac -MacWebPort 3000` | [已授权 SSH 环境的快捷入口，端口按实际填写](docs/windows-via-mac.md) |
-
-仅盘点硬件用 Mac 的 `--check` 或 Windows 的 `-CheckOnly`。仅下载并校验桌面安装包用 `--download-only` 或 `-DownloadOnly`。安装常用 Agent CLI 的参数及登录方式见[智能体执行手册](AGENTS.md)。
+切换入口时，按服务地址、Agent 的执行设备和模型来源逐项核对。两个独立 Linger 服务分别保存各自的聊天。
 
 ## Mac 与 Windows 配置对比
+
+安装脚本以 **Linger Desktop 0.1.6** 为基线。该版本捆绑 `localmodels 0.1.0.dev45`。硬件参考来自官方 `0.1.0.dev41` 的模拟配置，实际选择以目标机安装向导和可用资源为准。 [官方发布](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [官方硬件表](https://docs.heylinger.com/hardware/compatibility)
 
 | 项目 | Mac | Windows |
 | --- | --- | --- |
@@ -93,11 +103,22 @@ Linger 里的**账号**是登录身份，**服务**保存房间和会话，**计
 
 更多操作和命令见 [Mac 独立](docs/mac.md)、[Windows 独立](docs/windows.md)、[Windows 依赖 Mac](docs/windows-via-mac.md) 和 [官方排障](https://docs.heylinger.com/admin/troubleshooting)。
 
-## 本指南的验证记录
+## 仓库结构
 
-- **现场确认。** Windows 独立的 4B 完成了本机文件写入和读回。测试模型随后已卸载，权重仍在磁盘，未设置开机加载。日常 4B 与按需 27B 有各自入口，资源不足时保持当前目标，等待用户释放资源。原 Mac 入口继续保留，两模式聊天分别保存。
-- **现场待补验。** 截图没有给出 Windows 独立 27B 的完整实测结果，也没有做 Mac 关机后的 Windows 独立复测。两项应分别记录为待验证。
-- **公开脚本校验。** 两平台的官方桌面包已完整下载，实算 SHA-256 与同版清单一致。安装脚本做了语法检查和模拟资源预检。公开脚本的新机器安装、Runtime 登录和各模式推理以目标机验收为准。
+```text
+linger-local-deploy/
+├── README.md                 # 项目首页、发给 Agent 的启动词、模型对照
+├── AGENTS.md                 # Agent 安装、确认、验收与交付流程
+├── CLAUDE.md                 # Claude Code 的项目指引入口
+├── install-macos.sh          # Mac 硬件检查、校验、安装与打开应用
+├── install-windows.ps1       # Windows 硬件检查、校验与 Agent 安装
+├── open-windows-mac.ps1      # 使用已获准的 SSH 路径从 Windows 访问 Mac
+├── docs/
+│   ├── mac.md                # Mac 独立部署
+│   ├── windows.md            # Windows 独立部署
+│   └── windows-via-mac.md    # Windows 提交任务给 Mac
+└── LICENSE                   # MIT
+```
 
 ## 许可
 
