@@ -1,6 +1,6 @@
-# Mac 配置与验收
+# Mac 单独执行任务
 
-这一流程可以在 Mac 上单独完成。准备 Apple silicon Mac、macOS 14 或更新、可用网络、足够的统一内存和目标磁盘空间。
+Linger 服务、Agent 工作区和本地模型都在 Mac 上。这条流程适合日常文档与代码任务，可在 Mac 上独立完成。准备 Apple silicon Mac、macOS 14 或更新、可用网络、足够的统一内存和目标磁盘空间。
 
 ## 1. 检查 Mac 及本地模型档位
 
@@ -47,3 +47,5 @@ bash ./install-macos.sh
 - 新建一条不含隐私的短测试，例如「把 `apple, pear, banana` 分成三个项目列出」。发出前核对 Agent 的计算机是 Mac、Runtime 是本地 Pi、模型名是 `Qwen3.8-27B`。有回答后检查模型状态和 Mac 的资源变化，三项一并记录。
 - 在模型页确认任务已完成、内容已保存，再执行 **Unload**。看到 **Downloaded** 后重跑 `--check`，记录释放后的统一内存。模型文件继续留在磁盘。
 - 在「系统设置 → 通用 → 登录项」和 Linger 自身的开机设置里关闭 Linger 自启。待保存了工作再试一次退出并重开，检查模型是否仍为 **Downloaded**。版本 0.1.6 的桌面恢复逻辑可能启动已批准的模型栈。若重开即加载，交付时标记这一项未达到「打开应用仍不加载」，并明确下次何时会触发加载。 [桌面恢复逻辑](https://github.com/simplexai-labs/linger/blob/desktop-v0.1.6/apps/desktop/src/main/local-server.ts)
+
+如果日后想从 Windows 操作同一个 Mac 的工作区和模型，使用 [Windows 依赖 Mac](windows-via-mac.md) 的访问流程，并单独验证任务仍在 Mac 执行。

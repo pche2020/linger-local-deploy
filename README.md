@@ -1,6 +1,6 @@
 # Linger 本地部署指南
 
-在 Mac 或 Windows 上安装 Linger，按硬件选择本地模型，再验证指定设备确实完成了一次推理。本文以 **Linger Desktop 0.1.6** 为安装基线。该版本捆绑 `localmodels 0.1.0.dev45`，硬件参考表来自官方 `0.1.0.dev41` 的模拟配置，以实际安装向导的计划和本机验收为准。 [官方发布](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [官方硬件表](https://docs.heylinger.com/hardware/compatibility)
+选择 Mac 独立、Windows 独立或从 Windows 使用 Mac 三种 Linger 部署方式。按实际执行机的硬件选模型，再用任务结果和设备资源变化验收。本文以 **Linger Desktop 0.1.6** 为安装基线。该版本捆绑 `localmodels 0.1.0.dev45`，硬件参考表来自官方 `0.1.0.dev41` 的模拟配置，以实际安装向导的计划和本机验收为准。 [官方发布](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [官方硬件表](https://docs.heylinger.com/hardware/compatibility)
 
 ## 本地部署能解决什么问题
 
@@ -8,11 +8,21 @@
 | --- | --- | --- |
 | 私密笔记、内部文档、离线素材 | 在自管设备上用本地模型提取要点、分类或起草 | 推理内容留在选定的本地计算机。房间、历史和文档由你选用的 Linger 服务保存 |
 | 高频处理日志、代码和草稿 | 在日常机器或闲置 GPU 电脑上运行模型 | 本地推理没有远程模型 API 的逐次费用或限流。机器仍有显存、耗电和吞吐成本 |
-| Mac 日常使用，Windows 承担推理 | 两端使用同一 Linger 账号，在 Linger 里明确选择执行计算机及其本地模型 | 能在另一台设备使用同一账号，同时让模型在有空闲显存的机器上处理任务 |
+| 两台设备分工，或 Windows 不适合常驻大模型 | 在各自设备独立执行，或者从 Windows 提交给 Mac 上的 Agent | 可在 Windows 操作、复用 Mac 的工作区与本地模型，也可让 Windows 自己使用 NVIDIA 显卡 |
 | 偶尔用 27B，而且还要剪辑、游戏或跑 ComfyUI | 保留模型文件，用时加载，用完卸载 | 避免专为偶发任务常驻占用 RAM 和显存 |
 | 断网或网络不稳定 | 先完成必要下载，再用已下载模型处理本地文本 | 本地推理可以使用已有权重。网页搜索、云模型登录和远程连接仍各自需要网络 |
 
 Linger 里的**账号**是登录身份，**服务**保存房间和会话，**计算机**提供执行环境，**Runtime**运行 Agent，**模型**负责推理。同一个邮箱也可能出现在两个独立 Quick Install 中。两端实际使用同一账号时，仍要分别核实服务地址、计算机状态和模型执行位置。云模型、联网工具与外部连接器有各自的数据流。 [数据存放位置](https://docs.heylinger.com/concepts/where-your-data-lives) · [数据和隐私](https://docs.heylinger.com/security/data-and-privacy)
+
+## 选择部署方式
+
+| 配置 | Linger 服务与记录 | Agent 和模型执行机 | 优点与使用场景 | 依赖与代价 |
+| --- | --- | --- | --- | --- |
+| [Mac 单独执行](docs/mac.md) | Mac 本机 | Mac，Metal | 设备少、维护简单。适合 Mac 日常文档、笔记、代码和个人知识库 | 占用 Mac 的统一内存，模型容量随当前可用内存变化 |
+| [Windows 单独执行](docs/windows.md) | Windows 本机 | Windows，CUDA | 可使用独显与本地文件。轻任务可以明确选 4B，长文和较复杂任务按需启用 27B | 要管理 Windows 可用 RAM、显存、驱动和磁盘，两档入口各自核对所选模型 |
+| [Windows 依赖 Mac 执行](docs/windows-via-mac.md) | Mac 上的 Linger 服务 | Mac，Metal。Windows 访问并提交任务 | Windows 可以复用 Mac 的 Agent、文件和模型，适合 Windows GPU 忙、文件在 Mac 或想维持同一个 Mac 工作区 | Mac 要在线，Windows 要能访问 Mac 服务。远程访问可能受休眠、网络和端口影响 |
+
+两端可以登录同一账号。选择模式时以实际服务地址、Agent 指定的计算机、Runtime 和模型为准。案例里的 Windows 独立模式与访问 Mac 的模式分别保存聊天，切换入口不会合并两边的历史。
 
 ## 一条命令安装
 
@@ -20,8 +30,9 @@ Linger 里的**账号**是登录身份，**服务**保存房间和会话，**计
 
 | 系统 | 命令 | 完整流程 |
 | --- | --- | --- |
-| Apple silicon Mac | `bash ./install-macos.sh` | [从检查硬件到卸载模型](docs/mac.md) |
-| Windows 11 x64 | `.\install-windows.ps1` | [从检查驱动到卸载模型](docs/windows.md) |
+| Apple silicon Mac | `bash ./install-macos.sh` | [Mac 单独执行](docs/mac.md) |
+| Windows 11 x64 | `.\install-windows.ps1` | [Windows 单独执行](docs/windows.md) |
+| 在 Windows 使用 Mac | `.\open-windows-mac.ps1 -SshHost your-mac -MacWebPort 3000` | [已授权 SSH 环境的快捷入口，端口按实际填写](docs/windows-via-mac.md) |
 
 仅盘点硬件用 Mac 的 `--check` 或 Windows 的 `-CheckOnly`。仅下载并校验桌面安装包用 `--download-only` 或 `-DownloadOnly`。安装常用 Agent CLI 的参数及登录方式见[智能体执行手册](AGENTS.md)。
 
@@ -38,7 +49,7 @@ Linger 里的**账号**是登录身份，**服务**保存房间和会话，**计
 
 ### 硬件对应模型
 
-以下是官方自动计划参考。Mac 以统一内存容量分档。Windows 以 NVIDIA 总显存分档，参考的系统内存配置在最后一列。较长上下文需要更多 KV 缓存。64K 和 128K 分别是 65,536 和 131,072 tokens，两并发槽共享所列预算。
+以下是官方自动计划参考。Mac 以统一内存容量分档。Windows 以 NVIDIA 总显存分档，参考的系统内存配置在最后一列。从 Windows 使用 Mac 执行时，要查 **Mac** 的硬件行。较长上下文需要更多 KV 缓存。64K 和 128K 分别是 65,536 和 131,072 tokens，两并发槽共享所列预算。
 
 | 平台和容量 | 模型 | 量化 | 共享上下文 | 参考系统 RAM |
 | --- | --- | --- | --- | --- |
@@ -58,7 +69,15 @@ Linger 里的**账号**是登录身份，**服务**保存房间和会话，**计
 
 官方模拟中，24 GiB Mac 的 27B/64K 配置约需 **21 GiB 可用统一内存**。Windows 在官方模拟里，`UD-IQ3_S` 64K 约需 **14.5 GiB 空闲显存**。官方 16 GiB 卡的 Linux 表给出了约 **18.25 GiB 可用 RAM** 的 27B 模拟参考，Windows 这档的表格显示的是 4B 的最低可用 RAM。可把 18.25 GiB 用作 Windows 16 GiB 卡的初筛值，正式加载使用该机器实际计划显示的门槛。Windows 8–12 GiB 档的 Spark 仍标为候选，16 GiB 卡以上的 Windows 可用方案也取决于驱动、当前空闲和实际计划。 [官方硬件表及其测试假设](https://docs.heylinger.com/hardware/compatibility)
 
-## 配置时容易遇到的问题
+## 三种模式的卡点
+
+| 模式 | 常见卡点 | 解决方式 |
+| --- | --- | --- |
+| Mac 独立 | 能看到已下载的 27B，但统一内存／Metal 工作集不足 | 以 Mac 当前读数和计划的门槛为准。保存工作后由用户释放资源，重新检查 27B |
+| Windows 独立 | 用 4B 的房间去测 27B，或以为进了 Windows 页面就一定用 Windows 推理 | 分开标记两个入口，任务前核对 Windows、Runtime 和模型。27B 不足时保持目标并暂停 |
+| Windows 依赖 Mac | SSH 黑窗口安静、两模式的聊天看起来少了、Mac 休眠后打不开页面 | 无输出可通过 Windows 的浏览器核对链路。回到原服务找聊天。先确认 Mac 在线和实际端口，再核对 Agent 是否被派到 Mac |
+
+## 通用排障
 
 | 症状 | 查哪里 | 怎么处理 |
 | --- | --- | --- |
@@ -72,11 +91,13 @@ Linger 里的**账号**是登录身份，**服务**保存房间和会话，**计
 | 权重下载中断或校验失败 | 模型状态、下载目录权限、可用磁盘 | 用模型页的 **Resume download** 继续。完整性失败时按错误提示重新获取对应文件 |
 | Agent 列表里有 CLI 但无法执行 | CLI 是否新终端可见、账号登录、Runtime 检查 | 按智能体手册逐项检查。做本地模型验收时核对 Runtime 与模型来源，避免误测到云端 |
 
-更多操作和命令见 [Mac 详细流程](docs/mac.md)、[Windows 详细流程](docs/windows.md) 和 [官方排障](https://docs.heylinger.com/admin/troubleshooting)。
+更多操作和命令见 [Mac 独立](docs/mac.md)、[Windows 独立](docs/windows.md)、[Windows 依赖 Mac](docs/windows-via-mac.md) 和 [官方排障](https://docs.heylinger.com/admin/troubleshooting)。
 
 ## 本指南的验证记录
 
-已完整下载两平台的官方桌面安装包并实算 SHA-256，与同版本的 `SHA256SUMS.txt` 一致。两套脚本已做语法检查，资源预检用模拟硬件数据验证了达标和不足两条路径。目标设备上的 GUI 安装、模型下载、运行时安装和真实 GPU 推理需要按两套流程在对应实机验收。
+- **现场确认。** Windows 独立的 4B 完成了本机文件写入和读回。测试模型随后已卸载，权重仍在磁盘，未设置开机加载。日常 4B 与按需 27B 有各自入口，资源不足时保持当前目标，等待用户释放资源。原 Mac 入口继续保留，两模式聊天分别保存。
+- **现场待补验。** 截图没有给出 Windows 独立 27B 的完整实测结果，也没有做 Mac 关机后的 Windows 独立复测。两项应分别记录为待验证。
+- **公开脚本校验。** 两平台的官方桌面包已完整下载，实算 SHA-256 与同版清单一致。安装脚本做了语法检查和模拟资源预检。公开脚本的新机器安装、Runtime 登录和各模式推理以目标机验收为准。
 
 ## 许可
 

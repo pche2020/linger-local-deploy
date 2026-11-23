@@ -1,6 +1,6 @@
-# Windows 配置与验收
+# Windows 单独执行任务
 
-这一流程可以在 Windows 上单独完成。准备 Windows 11 x64、受 Linger 支持的 NVIDIA 驱动和显卡、可用网络、目标磁盘空间。用普通用户的 PowerShell 操作。
+Linger 服务、Agent 工作区和本地模型都在 Windows 上。这条流程适合 Windows 上的文件、代码、大模型及 NVIDIA 显卡任务。准备 Windows 11 x64、受 Linger 支持的 NVIDIA 驱动和显卡、可用网络、目标磁盘空间。用普通用户的 PowerShell 操作。
 
 ## 1. 实测 Windows、驱动、内存和显存
 
@@ -32,11 +32,22 @@ nvidia-smi --query-gpu=index,name,driver_version,memory.total,memory.free --form
 
 ## 3. 登录账号和登记这台 Windows
 
-1. 打开 Linger。独立在 Windows 上搭服务时用 **Quick Install**。已经有可以访问的同一 Linger 账号时，用 **Server address** 输入该账号实际登录的服务地址，再登录已有账号。无论 Mac 是否也登录同一账号，都要在 **Computers／计算机** 确认 Windows 设备已连接。
+1. 打开 Linger。首次独立部署用 **Quick Install**，在 Windows 上启动本机服务并登记 Windows。复用已有 Windows 本机安装时，先核对当前入口指向 Windows 的本机服务。如果想通过 Mac 的服务发任务，走 [Windows 依赖 Mac](windows-via-mac.md) 流程。
 2. Quick Install 生成的默认邮箱可以相同，密码由各自安装生成。本机账号在对应安装完成页 **Your account on this computer → Show** 查阅。需要用户输入的密码与登录确认留在本地界面。
 3. 打开 **设置 → 模型**，选择 Windows 设备和 **Local model**。Windows 本地模型使用 Pi Runtime。额外的 Codex、Claude Code 或 Antigravity 等按[智能体执行手册](../AGENTS.md)安装。在 Agent 的设置里选择这台 Windows 作为执行机。
 
-## 4. 下载 27B、检查缺口并按需加载
+## 4. 设定日常 4B 与按需 27B
+
+在同一台 Windows 上准备两条明确标记的操作路径，逐项记录它们的实际房间、Runtime 和模型。原生界面可以为两个用途分别保留房间或标签，发任务前手动核对当前模型。已有案例的本地入口如下。
+
+| 本机用途 | 案例中的入口 | 进入后核对 |
+| --- | --- | --- |
+| 日常轻任务 | `Open-Windows-Standalone.cmd` | 默认 4B，选择「Windows 独立 4B」 |
+| 指定长文、复杂任务 | `Open-Windows-Standalone-27B.cmd` | 按需加载 27B，选择「Windows 独立 27B」 |
+
+表中的 `.cmd` 是现场已有的入口名。用公开安装包新装时，依据下方操作先准备模型，再建立明确命名的房间或本地快捷入口。日常路径的默认 4B 是使用者主动选择。27B 路径缺资源时暂停，保持 27B 选择。
+
+## 5. 下载 27B、检查缺口并按需加载
 
 1. 核对窗口显示的模型、量化、CUDA、共享上下文、计划所需 RAM、VRAM 和所选盘空间。目标只有 27B 时，向导给 4B 就停在确认前。资源紧张时先保存内容，等使用者决定何时释放其他程序。
 2. 在 Windows 设备的 27B 项点 **Download**，等校验结束。若使用了首次向导的一体化安装流程，它会加载并自检一次。记录实际的模型文件位置。Quick Install 0.1.6 管理的模型根目录是所选 Linger 数据根目录下的 `runtime\localmodels\models`。默认数据根目录为 `$env:USERPROFILE\.simplexai`，自定义目录以日志和模型详情为准。
@@ -49,9 +60,13 @@ nvidia-smi --query-gpu=index,name,driver_version,memory.total,memory.free --form
    PowerShell 会分别给出 RAM、显存缺口。遇到不足或无法测量先停下。使用者释放资源后复测，不把 RAM 和显存相加。
 4. 模型页点 **Recheck memory**，等应用判定可加载后点 Windows 对应 27B 的 **Load**。选择这条 27B 作为 Agent 使用的模型。后续启动重复预检和 **Load**，保留原模型选择。
 
-## 5. 真实推理、释放资源与开机验证
+## 6. 真实推理、释放资源与开机验证
+
+先在「Windows 独立 4B」做一次只针对临时目录的文件写入和读回。界面回答、Windows 本地文件和 4B 日志或状态相互印证才算通过。测试 27B 时切换到它独立的房间，再执行下面的检查。
 
 1. 加载前记录空闲内存与显存。加载后核对 Windows 模型状态和 **Loaded** 的 27B 标识。同时用 `nvidia-smi` 观察空闲显存变化。
 2. 在 Agent 所在房间发不含隐私的短测试，例如「回复 `Windows local test` 再用一行概括 2+3 的结果」。验收三件事：执行位置是该 Windows，27B 真实返回测试结果，Windows 显存使用或推理日志与时间相符。部分 WDDM 驱动不会返回每个进程的显存，结合整体显存和应用日志查看。
 3. 确认测试结束、没有未保存内容或其他待完成的任务，再在模型页点 **Unload**。模型状态应回到 **Downloaded**。再次执行 `-CheckOnly`，记录回收后的 RAM、VRAM，并确认文件仍在原目录。必要时在托盘选择 **Quit**，先确认活动任务与保存状态。
 4. 到「设置 → 应用 → 启动」检查 Linger 是关闭状态。如果组织部署另加了 Linger 登录启动项，也要核对这一项。之后在获准的维护时间验证重新登录／启动和手动重开 Linger 两个场景。若重开自动恢复已批准的 27B 栈，报告其触发条件，按需验收保留为待解决。 [官方发布的退出行为](https://github.com/simplexai-labs/linger/releases/tag/desktop-v0.1.6) · [桌面恢复逻辑](https://github.com/simplexai-labs/linger/blob/desktop-v0.1.6/apps/desktop/src/main/local-server.ts)
+
+现场的 4B 完成了本地读写，模型已卸载且文件保留。27B 单独记录模型推理、显存变化和回收结果。退出和重新打开本机入口时，核对所访问的仍是 Windows 本机服务。要验收 Windows 在 Mac 休眠或关机时可独立执行，先保护两边未保存内容，在获准的维护时间复跑本节。截图里这一步尚未执行。
