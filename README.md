@@ -2,7 +2,7 @@
 ![Linger 本地部署封面](assets/cover.webp)
 
 
-把这个仓库发给能操作目标电脑的 Agent，就能让它检查硬件、安装 Linger、选合适的本地模型，并用一次真实任务确认跑在预期设备上。Mac 和 Windows 都可以独立部署，也可以在 Windows 提交任务、让 Mac 执行。
+不用自己装本地大模型了。把这个仓库发给目标电脑上的 Agent，它会检查硬件、装好 Linger、按内存和显存挑对模型，再用一次真实任务验给你看：Mac 上整理 Obsidian 里的会议纪要，Windows 上归类构建日志和报错，显卡被 ComfyUI 占着时、让 Mac 接着处理资料。模型跑在你自己的电脑上，推理不走云端、不按 token 收费。
 
 ## 把这段话发给你的 Agent
 
